@@ -1,0 +1,133 @@
+"A project is created once the listing's been approved"
+type Project @entity {
+  "Unique ID for the project"
+  id: ID!
+  "Ethereum address of the listing owner"
+  owner: Bytes!
+  "Name of the project"
+  name: String!
+  "Description of what the project is"
+  description: String
+  "Image URL or Base64 encoded string"
+  logo: String
+  "The project category"
+  categories: [Category]
+  "The company's main website address"
+  website: String
+  "URL to the project's main blog"
+  blog: String
+  "URL to Twitter or other public social feed"
+  socialFeed: String
+  "URL to the project's source code management tool"
+  sourceCode: string
+  "Creation timestamp"
+  createdAt: Int
+  "Updated timestamp"
+  updatedAt: Int
+}
+
+enum Category {
+  Protocol
+  DApp
+  Fund
+  Accelerator
+  ServiceProvider
+}
+
+enum DAppCategory {
+  Social
+  Finance
+  Governance
+  Games
+  Adult
+  Marketplaces
+  Collectibles
+  Utilities
+}
+
+enum FinanceCategory {
+  Lending
+  Exchange
+  Synthetics
+  Wallet
+  Payments
+}
+
+enum ServiceProviderCategory {
+  Development
+  Design
+  Marketing
+  Security
+  Staking
+  PR
+}
+
+type Submission @entity {
+  vote: Vote
+  amount: Int
+  claimed: Boolean
+}
+
+type Listing @entity {
+  action: BallotType
+  applicant: Curator
+  "IPFS hash"
+  metadataHash: String
+  metadata: Metadata
+  status: ListingStatus
+}
+
+type Metadata @entity {
+  "Name of the project"
+  name: String!
+  "Description of what the project is"
+  description: String
+  "Image URL or Base64 encoded string"
+  logo: String
+  "The project category"
+  category: Category!
+  "The company's main website address"
+  website: String
+  "URL to the project's main blog"
+  blog: String
+  "URL to Twitter or other public social feed"
+  socialFeed: String
+  "URL to the project's source code management tool"
+  sourceCode: string
+}
+
+enum ListingStatus {
+  Voting
+  Approved
+  Rejected
+}
+
+enum Vote {
+  Null
+  Yes
+  No
+}
+
+enum BallotType {
+  Null
+  Add
+  Remove
+}
+
+type Poll @entity {
+  id: ID!
+}
+
+type Token @entity {
+  id: ID!
+}
+
+"An account that has received tokens and/or voted"
+type Curator @entity {
+  "The Ethereum address of the curator"
+  id: ID!
+  "All previous votes performed by the curator"
+  votes: [Vote]
+  "The number of tokens that the curator holds"
+  tokenBalance: Int
+}
