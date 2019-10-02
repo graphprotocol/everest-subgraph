@@ -1,0 +1,63 @@
+specVersion: 0.0.2
+description: Metacartel TCR
+repository: https://github.com/metacartel/appregistry
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: bootstrapList
+    network: ropsten
+    source:
+      address: ""
+      abi: bootstrapList
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.3
+      language: wasm/assemblyscript
+      file: ./src/mappings/bootstrapList.ts
+      entities:
+        - TODO
+      abis:
+        - name: bootstrapList
+          file: ./abis/BootstrapList.json
+      eventHandlers:
+        - event:
+          handler: handle
+  - kind: ethereum/contract
+    name: registry
+    network: ropsten
+    source:
+      address: ""
+      abi: registry
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.3
+      language: wasm/assemblyscript
+      file: ./src/mappings/registry.ts
+      entities:
+        - TODO
+      abis:
+        - name: registry
+          file: ./abis/Registry.json
+      eventHandlers:
+        - event:
+          handler: handle
+  - kind: ethereum/contract
+    name: TCR
+    network: ropsten
+    source:
+      address: ""
+      abi: TCR
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.3
+      language: wasm/assemblyscript
+      file: ./src/mappings/TCR.ts
+      entities:
+        - TODO
+      abis:
+        - name: TCR
+          file: ./abis/TCR.json
+      eventHandlers:
+        - event:
+          handler: handle
