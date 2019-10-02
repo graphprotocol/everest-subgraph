@@ -11,7 +11,7 @@ type Project @entity {
   "Image URL or Base64 encoded string"
   logo: String
   "The project category"
-  categories: [Category]
+  categories: [Category!]
   "The company's main website address"
   website: String
   "URL to the project's main blog"
@@ -19,7 +19,7 @@ type Project @entity {
   "URL to Twitter or other public social feed"
   socialFeed: String
   "URL to the project's source code management tool"
-  sourceCode: string
+  sourceCode: String
   "Creation timestamp"
   createdAt: Int
   "Updated timestamp"
@@ -63,12 +63,16 @@ enum ServiceProviderCategory {
 }
 
 type Submission @entity {
+  "Unique ID for the submission"
+  id: ID!
   vote: Vote
   amount: Int
   claimed: Boolean
 }
 
 type Listing @entity {
+  "Unique ID for the listing"
+  id: ID!
   action: BallotType
   applicant: Curator
   "IPFS hash"
@@ -78,6 +82,8 @@ type Listing @entity {
 }
 
 type Metadata @entity {
+  "IPFS hash for the metadata"
+  id: ID!
   "Name of the project"
   name: String!
   "Description of what the project is"
@@ -93,7 +99,7 @@ type Metadata @entity {
   "URL to Twitter or other public social feed"
   socialFeed: String
   "URL to the project's source code management tool"
-  sourceCode: string
+  sourceCode: String
 }
 
 enum ListingStatus {
@@ -127,7 +133,19 @@ type Curator @entity {
   "The Ethereum address of the curator"
   id: ID!
   "All previous votes performed by the curator"
-  votes: [Vote]
+  votes: [Vote!]
   "The number of tokens that the curator holds"
-  tokenBalance: Int
+  tokenBalance: BigInt!
+}
+
+type TCR @entity {
+  id: ID!
+  owner: Bytes!
+  votingDurationSecs: Int!
+  revealDurationSecs: Int!
+  name: String!
+  symbol: String!
+  decimals: Int!
+  bootstrapListAddress: Bytes!
+  started: Boolean!
 }

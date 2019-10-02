@@ -4,49 +4,35 @@ repository: https://github.com/metacartel/appregistry
 schema:
   file: ./schema.graphql
 dataSources:
-  - kind: ethereum/contract
-    name: bootstrapList
-    network: ropsten
-    source:
-      address: ""
-      abi: bootstrapList
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.3
-      language: wasm/assemblyscript
-      file: ./src/mappings/bootstrapList.ts
-      entities:
-        - TODO
-      abis:
-        - name: bootstrapList
-          file: ./abis/BootstrapList.json
-      eventHandlers:
-        - event:
-          handler: handle
-  - kind: ethereum/contract
-    name: registry
-    network: ropsten
-    source:
-      address: ""
-      abi: registry
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.3
-      language: wasm/assemblyscript
-      file: ./src/mappings/registry.ts
-      entities:
-        - TODO
-      abis:
-        - name: registry
-          file: ./abis/Registry.json
-      eventHandlers:
-        - event:
-          handler: handle
+# NOTE - not clear this is needed, afaik it will be deleted but keeping it here for now
+#  - kind: ethereum/contract
+#    name: registry
+#    network: ropsten
+#    source:
+#      address: "0x0000000000000000000000000000000000000000" # temporary
+#      abi: registry
+#    mapping:
+#      kind: ethereum/events
+#      apiVersion: 0.0.3
+#      language: wasm/assemblyscript
+#      file: ./src/mappings/registry.ts
+#      entities:
+#        - TODO
+#      abis:
+#        - name: registry
+#          file: ./abis/Registry.json
+#      eventHandlers:
+#        - event: Deployed(address,address,address,uint256,uint256,string,string,uint8)
+#          handler: handleDeployed
+#        - event: Ragequit(address,uint256,uint256)
+#          handler: handleRagequit
+#        - event: TCRStart(address,string,string,uint8,address)
+#          handler: handleTCRStart
   - kind: ethereum/contract
     name: TCR
     network: ropsten
     source:
-      address: ""
+      address: "0x0000000000000000000000000000000000000000" # temporary
       abi: TCR
     mapping:
       kind: ethereum/events
@@ -54,10 +40,34 @@ dataSources:
       language: wasm/assemblyscript
       file: ./src/mappings/TCR.ts
       entities:
-        - TODO
+        - Project
+        - Submission
+        - Listing
+        - Metadata
+        - Poll
+        - Token
+        - Curator
       abis:
         - name: TCR
           file: ./abis/TCR.json
       eventHandlers:
-        - event:
-          handler: handle
+        - event: Deployed(address,uint256,uint256,string,string,uint8,address)
+          handler: handleDeployed
+        - event: Started(uint256)
+          handler: handleStarted
+        - event: Bootstrap(uint256,uint256,uint256,bool)
+          handler: handleBootstrap # maybe not needed, seems unimportant
+        - event: Buy(address,uint256,uint256)
+          handler: handleBuy
+        - event: Sell(address,uint256,uint256)
+          handler: handleSell
+        - event: Submit(uint8,string,uint256,string,address,uint256,uint256)
+          handler: handleSubmit
+        - event: Commit(address,uint256,uint256)
+          handler: handleCommit
+        - event: Reveal(address,uint8,uint256,uint256)
+          handler: handleReveal
+        - event: Processed(uint256)
+          handler: handleProcessed
+        - event: Claim(address,uint256,uint256)
+          handler: handleClaim
