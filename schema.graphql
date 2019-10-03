@@ -65,20 +65,37 @@ enum ServiceProviderCategory {
 type Submission @entity {
   "Unique ID for the submission"
   id: ID!
+  listing: Listing!
   vote: Vote
-  amount: Int
-  claimed: Boolean
+  amount: Int!
+  claimed: Boolean!
 }
 
+# AKA ballot, poll, and tally
 type Listing @entity {
+  # Ballot values
   "Unique ID for the listing"
   id: ID!
-  action: BallotType
-  applicant: Curator
+  action: BallotType!
+  applicant: Curator!
   "IPFS hash"
-  metadataHash: String
-  metadata: Metadata
-  status: ListingStatus
+  metadataHash: Metadata!
+  status: ListingStatus!
+  entry: String!
+  amount: BigInt!
+
+  # Tally values
+  yesVotes: BigInt!
+  noVotes: BigInt!
+  unrevealedAmountTotal: BigInt!
+
+  # Poll values
+  startTime: Int!
+  endTime: Int!
+  revealTime: Int!
+
+  # Submissions
+  submissions: [Submission!] @derivedFrom(field: "listing")
 }
 
 type Metadata @entity {
@@ -120,12 +137,9 @@ enum BallotType {
   Remove
 }
 
-type Poll @entity {
-  id: ID!
-}
-
 type Token @entity {
   id: ID!
+  # total supply - to add?
 }
 
 "An account that has received tokens and/or voted"
@@ -147,5 +161,11 @@ type TCR @entity {
   symbol: String!
   decimals: Int!
   bootstrapListAddress: Bytes!
-  started: Boolean!
+
+  bootstrapAddresses: [Bytes!]
+  startDate: Int
+  ready: Boolean!
+  memberIndex: BigInt!
+  currentBallotIndex: BigInt!
+
 }
