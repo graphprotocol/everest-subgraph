@@ -1,12 +1,11 @@
 /* eslint-disable prefer-const */ // to satisfy AS compiler
 
-import { BigInt, ipfs, json, Bytes, Address, store } from '@graphprotocol/graph-ts'
+import { BigInt, ipfs, json, Bytes, Address, store, BigDecimal } from '@graphprotocol/graph-ts'
 import {
   Project,
   Submission,
   Listing,
   Metadata,
-  Token,
   Curator,
   TCR,
 } from '../types/schema'
@@ -24,13 +23,14 @@ import {
   TCR as tcrContract,
 } from '../types/TCR/TCR'
 
+import { toDecimal } from './helpers'
+
 // TODO - the interfaces for app type
-// TODO - handle general transfer of the token through token transfer events. Or just always call the contract for the curator balance
-// TODO - total supply for the token
 
 // Deploy the TCR
 export function handleDeployed(event: Deployed): void {
   let tcr = new TCR('1')
+  tcr.tcrAddress = event.address
   tcr.owner = event.params.owner
   tcr.votingDurationSecs = event.params.votingDurationSecs
   tcr.revealDurationSecs = event.params.revealDurationSecs
@@ -57,41 +57,43 @@ export function handleBootstrap(event: Bootstrap): void {
 }
 
 // Buy TCR Tokens
+// Note, tokenBalance will be updated in tcrToken.ts with Transfer event
 export function handleBuy(event: Buy): void {
   let id = event.params.buyer.toHexString()
   let curator = Curator.load(id)
   if (curator == null) {
     curator = new Curator(id)
     curator.votes = []
-    curator.tokenBalance = BigInt.fromI32(0)
+    curator.tokenBalance = BigDecimal.fromString('0')
+    curator.save()
   }
-  curator.tokenBalance = curator.tokenBalance.plus(event.params.amount)
-  curator.save()
 }
 
 // Sell TCR tokens
+// Note, tokenBalance will be updated in tcrToken.ts with Transfer event
 export function handleSell(event: Sell): void {
   let id = event.params.seller.toHexString()
   let curator = Curator.load(id)
   if (curator == null) {
     curator = new Curator(id)
     curator.votes = []
-    curator.tokenBalance = BigInt.fromI32(0)
+    curator.tokenBalance = BigDecimal.fromString('0')
+    curator.save()
   }
-  curator.tokenBalance = curator.tokenBalance.plus(event.params.amount)
-  curator.save()
 }
 
 // Creating a listing
+// Note, tokenBalance will be updated in tcrToken.ts with Transfer event
 export function handleSubmit(event: Submit): void {
+  let tcr = TCR.load('1')
   let id = event.params.pollId.toHexString()
   let listing = new Listing(id)
   listing.action = event.params.action
   listing.applicant = event.params.owner.toHexString()
   listing.metadataHash = event.params.details
   listing.entry = event.params.entry
-  listing.amount = event.params.amount
-  listing.tokensClaimed = BigInt.fromI32(0)
+  listing.amount = toDecimal(event.params.amount, tcr.decimals)
+  listing.tokensClaimed = BigDecimal.fromString('0')
   listing.status = 'Voting'
 
   // Need to call the contract here since poll data isn't emitted in event
@@ -103,12 +105,11 @@ export function handleSubmit(event: Submit): void {
 
   // Need to call the contract here since tally data isn't emitted in event
   let tallyData = contract.tallyQueue(event.params.pollId)
-  listing.yesVotes = tallyData.value0
-  listing.noVotes = tallyData.value1
-  listing.unrevealedAmountTotal = tallyData.value2
+  listing.yesVotes = toDecimal(tallyData.value0, tcr.decimals)
+  listing.noVotes = toDecimal(tallyData.value1, tcr.decimals)
+  listing.unrevealedAmountTotal = toDecimal(tallyData.value2, tcr.decimals)
   listing.save()
 
-  let tcr = new TCR('1')
   tcr.currentBallotIndex = event.params.currentPollId
   tcr.save()
 
@@ -144,14 +145,10 @@ export function handleSubmit(event: Submit): void {
     }
     metadata.save()
   }
-
-  // Update user token balance
-  let curator = Curator.load(event.params.owner.toHexString())
-  curator.tokenBalance = curator.tokenBalance.minus(event.params.amount)
-  curator.save()
 }
 
 // Voting on a listing
+// Note, tokenBalance will be updated in tcrToken.ts with Transfer event
 export function handleCommit(event: Commit): void {
   let id = event.params.pollId.toHexString().concat('-').concat(event.params.voter.toHexString())
   let submission = new Submission(id)
@@ -161,14 +158,10 @@ export function handleCommit(event: Commit): void {
   submission.claimed = false
   submission.save()
 
+  let tcr = TCR.load('1')
   let listing = Listing.load(event.params.pollId.toHexString())
-  listing.unrevealedAmountTotal = listing.unrevealedAmountTotal.plus(event.params.amount)
+  listing.unrevealedAmountTotal = listing.unrevealedAmountTotal.plus(toDecimal(event.params.amount, tcr.decimals))
   listing.save()
-
-  // Update user token balance
-  let curator = Curator.load(event.params.voter.toHexString())
-  curator.tokenBalance = curator.tokenBalance.minus(event.params.amount)
-  curator.save()
 }
 
 // Revealing your vote on a listing
@@ -178,12 +171,14 @@ export function handleReveal(event: Reveal): void {
   submission.vote = event.params.vote
   submission.save()
 
+  let tcr = TCR.load('1')
+  let amountDecimals = toDecimal(event.params.amount, tcr.decimals)
   let listing = Listing.load(event.params.pollId.toHexString())
-  listing.unrevealedAmountTotal = listing.unrevealedAmountTotal.minus(event.params.amount)
+  listing.unrevealedAmountTotal = listing.unrevealedAmountTotal.minus(amountDecimals)
   if (event.params.vote == 1) {
-    listing.yesVotes = listing.yesVotes.plus(event.params.amount)
+    listing.yesVotes = listing.yesVotes.plus(amountDecimals)
   } else {
-    listing.noVotes = listing.noVotes.plus(event.params.amount)
+    listing.noVotes = listing.noVotes.plus(amountDecimals)
   }
   listing.save()
 }
@@ -238,18 +233,15 @@ export function handleProcessed(event: Processed): void {
 }
 
 // Claiming back tokens if you voted correctly
+// Note, tokenBalance will be updated in tcrToken.ts with Transfer event
 export function handleClaim(event: Claim): void {
-  // Update user token balance
-  let curator = Curator.load(event.params.voter.toHexString())
-  curator.tokenBalance = curator.tokenBalance.plus(event.params.amount)
-  curator.save()
-
   let id = event.params.pollId.toHexString().concat('-').concat(event.params.voter.toHexString())
   let submission = new Submission(id)
   submission.claimed = true
   submission.save()
 
+  let tcr = TCR.load('1')
   let listing = Listing.load(event.params.pollId.toHexString())
-  listing.tokensClaimed = listing.tokensClaimed.plus(event.params.amount)
+  listing.tokensClaimed = listing.tokensClaimed.plus(toDecimal(event.params.amount, tcr.decimals))
   listing.save()
 }

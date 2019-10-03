@@ -83,12 +83,12 @@ type Listing @entity {
   metadataHash: Metadata!
   status: ListingStatus!
   entry: String!
-  amount: BigInt!
+  amount: BigDecimal!
 
   # Tally values
-  yesVotes: BigInt!
-  noVotes: BigInt!
-  unrevealedAmountTotal: BigInt!
+  yesVotes: BigDecimal!
+  noVotes: BigDecimal!
+  unrevealedAmountTotal: BigDecimal!
 
   # Poll values
   startTime: Int!
@@ -99,7 +99,7 @@ type Listing @entity {
   submissions: [Submission!] @derivedFrom(field: "listing")
 
   # Total claimed
-  tokensClaimed: BigInt!
+  tokensClaimed: BigDecimal!
 }
 
 type Metadata @entity {
@@ -142,8 +142,13 @@ enum BallotType {
 }
 
 type Token @entity {
+  "TCR token address"
   id: ID!
-  # total supply - to add?
+  name: String!
+  symbol: String!
+  decimals: String!
+  owner: Bytes!
+  totalSupply: BigDecimal!
 }
 
 "An account that has received tokens and/or voted"
@@ -153,11 +158,14 @@ type Curator @entity {
   "All previous votes performed by the curator"
   votes: [Submission!] @derivedFrom(field: "curator")
   "The number of tokens that the curator holds"
-  tokenBalance: BigInt!
+  tokenBalance: BigDecimal!
 }
 
+# TCR also contains token data
 type TCR @entity {
+  "TCR Contract address"
   id: ID!
+  tcrAddress: Bytes!
   owner: Bytes!
   votingDurationSecs: Int!
   revealDurationSecs: Int!
@@ -165,11 +173,11 @@ type TCR @entity {
   symbol: String!
   decimals: Int!
   bootstrapListAddress: Bytes!
+  totalSupply: BigDecimal!
 
   bootstrapAddresses: [Bytes!]
   startDate: Int
   ready: Boolean!
   memberIndex: BigInt!
   currentBallotIndex: BigInt!
-
 }
