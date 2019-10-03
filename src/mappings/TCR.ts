@@ -1,6 +1,6 @@
 /* eslint-disable prefer-const */ // to satisfy AS compiler
 
-import { BigInt, ipfs, json, Bytes } from '@graphprotocol/graph-ts'
+import { BigInt, ipfs, json, Bytes, Address, store } from '@graphprotocol/graph-ts'
 import {
   Project,
   Submission,
@@ -25,8 +25,8 @@ import {
 } from '../types/TCR/TCR'
 
 // TODO - the interfaces for app type
-// TODO - handle general transfer of the token through token transfer events
-  // or just always call the contract for the curator balance
+// TODO - handle general transfer of the token through token transfer events. Or just always call the contract for the curator balance
+// TODO - total supply for the token
 
 // Deploy the TCR
 export function handleDeployed(event: Deployed): void {
@@ -91,6 +91,7 @@ export function handleSubmit(event: Submit): void {
   listing.metadataHash = event.params.details
   listing.entry = event.params.entry
   listing.amount = event.params.amount
+  listing.tokensClaimed = BigInt.fromI32(0)
   listing.status = 'Voting'
 
   // Need to call the contract here since poll data isn't emitted in event
@@ -110,7 +111,6 @@ export function handleSubmit(event: Submit): void {
   let tcr = new TCR('1')
   tcr.currentBallotIndex = event.params.currentPollId
   tcr.save()
-
 
 
   // Take metadataHash and query IPFS and create Metadata
@@ -144,6 +144,11 @@ export function handleSubmit(event: Submit): void {
     }
     metadata.save()
   }
+
+  // Update user token balance
+  let curator = Curator.load(event.params.owner.toHexString())
+  curator.tokenBalance = curator.tokenBalance.minus(event.params.amount)
+  curator.save()
 }
 
 // Voting on a listing
@@ -151,6 +156,7 @@ export function handleCommit(event: Commit): void {
   let id = event.params.pollId.toHexString().concat('-').concat(event.params.voter.toHexString())
   let submission = new Submission(id)
   submission.listing = event.params.pollId.toHexString()
+  submission.curator = event.params.voter.toHexString()
   submission.amount = event.params.amount
   submission.claimed = false
   submission.save()
@@ -158,6 +164,11 @@ export function handleCommit(event: Commit): void {
   let listing = Listing.load(event.params.pollId.toHexString())
   listing.unrevealedAmountTotal = listing.unrevealedAmountTotal.plus(event.params.amount)
   listing.save()
+
+  // Update user token balance
+  let curator = Curator.load(event.params.voter.toHexString())
+  curator.tokenBalance = curator.tokenBalance.minus(event.params.amount)
+  curator.save()
 }
 
 // Revealing your vote on a listing
@@ -179,20 +190,66 @@ export function handleReveal(event: Reveal): void {
 
 // Finalizing a listing, and creating a Project
 export function handleProcessed(event: Processed): void {
-  let listing = Listing.load(event.params.pollId.toHexString())
-  listing.pr
-
   let tcr = new TCR('1')
+  let finishedListingID = tcr.currentBallotIndex
+  // Update to the next poll
   tcr.currentBallotIndex = event.params.pollId
 
-  let nextListing = Listing.load(event.params.pollId.toHexString())
-  // todo - continue here
+  // Update finished listing
+  let finishedlisting = Listing.load(finishedListingID.toHexString())
+  let contract = tcrContract.bind(event.address)
+  let results = contract.tcr(finishedlisting.entry)
+  let valid = results.value2
+  valid ? finishedlisting.startTime = 'Approved'
+    : finishedlisting.startTime = 'Rejected'
+  finishedlisting.save()
 
+  // Update next listing
+  let nextListing = Listing.load(event.params.pollId.toHexString())
+  let pollData = contract.pollQueue(event.params.pollId)
+  nextListing.startTime = pollData.value0
+  nextListing.endTime = pollData.value1
+  nextListing.revealTime = pollData.value2
+
+  // Create project
+  if (valid) {
+    let project = new Project(finishedListingID.toHexString())
+    project.owner = Address.fromString(finishedlisting.applicant)
+    let metadata = Metadata.load(finishedlisting.metadataHash)
+    project.name = metadata.name
+    project.description = metadata.description
+    project.logo = metadata.logo
+    project.categories = metadata.category
+    project.website = metadata.website
+    project.blog = metadata.blog
+    project.socialFeed = metadata.socialFeed
+    project.sourceCode = metadata.sourceCode
+    project.createdAt = event.block.timestamp
+    project.updatedAt = event.block.timestamp
+    project.save()
+  } else {
+    if (finishedlisting.action == 'Remove') {
+      // We must remove it as a project if this ballot was for removal
+      // If it was for acceptance, it never existed in the subgraph
+      // so there is no need to remove anything
+      store.remove('Project', finishedListingID.toHexString())
+    }
+  }
 }
 
 // Claiming back tokens if you voted correctly
 export function handleClaim(event: Claim): void {
+  // Update user token balance
+  let curator = Curator.load(event.params.voter.toHexString())
+  curator.tokenBalance = curator.tokenBalance.plus(event.params.amount)
+  curator.save()
 
+  let id = event.params.pollId.toHexString().concat('-').concat(event.params.voter.toHexString())
+  let submission = new Submission(id)
+  submission.claimed = true
+  submission.save()
 
-
+  let listing = Listing.load(event.params.pollId.toHexString())
+  listing.tokensClaimed = listing.tokensClaimed.plus(event.params.amount)
+  listing.save()
 }

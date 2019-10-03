@@ -11,7 +11,7 @@ type Project @entity {
   "Image URL or Base64 encoded string"
   logo: String
   "The project category"
-  categories: [Category!]
+  categories: Category!
   "The company's main website address"
   website: String
   "URL to the project's main blog"
@@ -66,6 +66,7 @@ type Submission @entity {
   "Unique ID for the submission"
   id: ID!
   listing: Listing!
+  curator: Curator!
   vote: Vote
   amount: Int!
   claimed: Boolean!
@@ -96,6 +97,9 @@ type Listing @entity {
 
   # Submissions
   submissions: [Submission!] @derivedFrom(field: "listing")
+
+  # Total claimed
+  tokensClaimed: BigInt!
 }
 
 type Metadata @entity {
@@ -147,7 +151,7 @@ type Curator @entity {
   "The Ethereum address of the curator"
   id: ID!
   "All previous votes performed by the curator"
-  votes: [Vote!]
+  votes: [Submission!] @derivedFrom(field: "curator")
   "The number of tokens that the curator holds"
   tokenBalance: BigInt!
 }
