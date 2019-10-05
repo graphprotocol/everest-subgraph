@@ -1,0 +1,11 @@
+{
+  "name": "Metacartel",
+  "description": "Metacartel is a DAO.",
+  "logo": "https://api.staging.thegraph.com/ipfs/<INSERT_IPFS_HASH_HERE>",
+  "category": "DAO",
+  "categories": "Finance,Governance",
+  "website": "https://www.metacartel.org/",
+  "blog": "Compound finance Protocol",
+  "socialFeed": "https://twitter.com/meta_cartel?lang=en",
+  "sourceCode": "https://github.com/metacartel/app-registry"
+}

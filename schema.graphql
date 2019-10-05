@@ -1,5 +1,5 @@
 "A project is created once the listing's been approved"
-type Project @entity {
+interface Project {
   "Unique ID for the project"
   id: ID!
   "Ethereum address of the listing owner"
@@ -10,8 +10,6 @@ type Project @entity {
   description: String
   "Image URL or Base64 encoded string"
   logo: String
-  "The project category"
-  categories: Category!
   "The company's main website address"
   website: String
   "URL to the project's main blog"
@@ -24,6 +22,87 @@ type Project @entity {
   createdAt: Int
   "Updated timestamp"
   updatedAt: Int
+}
+
+type DAppProject  implements Project @entity {
+  "Unique ID for the project"
+  id: ID!
+  "Ethereum address of the listing owner"
+  owner: Bytes!
+  "Name of the project"
+  name: String!
+  "Description of what the project is"
+  description: String
+  "Image URL or Base64 encoded string"
+  logo: String
+  "The company's main website address"
+  website: String
+  "URL to the project's main blog"
+  blog: String
+  "URL to Twitter or other public social feed"
+  socialFeed: String
+  "URL to the project's source code management tool"
+  sourceCode: String
+  "Creation timestamp"
+  createdAt: Int
+  "Updated timestamp"
+  updatedAt: Int
+  "Project categories"
+  dappCategories: [DAppCategory!]
+}
+
+type FinanceProject  implements Project @entity {
+  "Unique ID for the project"
+  id: ID!
+  "Ethereum address of the listing owner"
+  owner: Bytes!
+  "Name of the project"
+  name: String!
+  "Description of what the project is"
+  description: String
+  "Image URL or Base64 encoded string"
+  logo: String
+  "The company's main website address"
+  website: String
+  "URL to the project's main blog"
+  blog: String
+  "URL to Twitter or other public social feed"
+  socialFeed: String
+  "URL to the project's source code management tool"
+  sourceCode: String
+  "Creation timestamp"
+  createdAt: Int
+  "Updated timestamp"
+  updatedAt: Int
+  "Project categories"
+  financeCategories: [FinanceCategory!]
+}
+
+type ServiceProviderProject implements Project @entity {
+  "Unique ID for the project"
+  id: ID!
+  "Ethereum address of the listing owner"
+  owner: Bytes!
+  "Name of the project"
+  name: String!
+  "Description of what the project is"
+  description: String
+  "Image URL or Base64 encoded string"
+  logo: String
+  "The company's main website address"
+  website: String
+  "URL to the project's main blog"
+  blog: String
+  "URL to Twitter or other public social feed"
+  socialFeed: String
+  "URL to the project's source code management tool"
+  sourceCode: String
+  "Creation timestamp"
+  createdAt: Int
+  "Updated timestamp"
+  updatedAt: Int
+  "Project categories"
+  serviceProviderCategories: [ServiceProviderCategory!]
 }
 
 enum Category {
@@ -113,6 +192,8 @@ type Metadata @entity {
   logo: String
   "The project category"
   category: Category!
+  "The category types as a string"
+  categories: [String!]
   "The company's main website address"
   website: String
   "URL to the project's main blog"

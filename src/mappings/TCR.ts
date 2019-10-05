@@ -1,8 +1,11 @@
 /* eslint-disable prefer-const */ // to satisfy AS compiler
 
 import { BigInt, ipfs, json, Bytes, Address, store, BigDecimal } from '@graphprotocol/graph-ts'
+import { parseCSV } from '@graphprotocol/graph-ts/helper-functions'
 import {
-  Project,
+  DAppProject,
+  FinanceProject,
+  ServiceProviderProject,
   Submission,
   Listing,
   Metadata,
@@ -23,7 +26,7 @@ import {
   TCR as tcrContract,
 } from '../types/TCR/TCR'
 
-import { toDecimal } from './helpers'
+import { toDecimal, createProject } from './helpers'
 
 // TODO - the interfaces for app type
 
@@ -143,6 +146,9 @@ export function handleSubmit(event: Submit): void {
     if (data.get('sourceCode')) {
       metadata.sourceCode = data.get('sourceCode').toString()
     }
+    if (data.get('categories')) {
+      metadata.categories = parseCSV(data.get('categories').toString())
+    }
     metadata.save()
   }
 }
@@ -191,13 +197,13 @@ export function handleProcessed(event: Processed): void {
   tcr.currentBallotIndex = event.params.pollId
 
   // Update finished listing
-  let finishedlisting = Listing.load(finishedListingID.toHexString())
+  let finishedListing = Listing.load(finishedListingID.toHexString())
   let contract = tcrContract.bind(event.address)
-  let results = contract.tcr(finishedlisting.entry)
+  let results = contract.tcr(finishedListing.entry)
   let valid = results.value2
-  valid ? finishedlisting.startTime = 'Approved'
-    : finishedlisting.startTime = 'Rejected'
-  finishedlisting.save()
+  valid ? finishedListing.startTime = 'Approved'
+    : finishedListing.startTime = 'Rejected'
+  finishedListing.save()
 
   // Update next listing
   let nextListing = Listing.load(event.params.pollId.toHexString())
@@ -208,22 +214,11 @@ export function handleProcessed(event: Processed): void {
 
   // Create project
   if (valid) {
-    let project = new Project(finishedListingID.toHexString())
-    project.owner = Address.fromString(finishedlisting.applicant)
-    let metadata = Metadata.load(finishedlisting.metadataHash)
-    project.name = metadata.name
-    project.description = metadata.description
-    project.logo = metadata.logo
-    project.categories = metadata.category
-    project.website = metadata.website
-    project.blog = metadata.blog
-    project.socialFeed = metadata.socialFeed
-    project.sourceCode = metadata.sourceCode
-    project.createdAt = event.block.timestamp
-    project.updatedAt = event.block.timestamp
-    project.save()
+    let metadata = Metadata.load(finishedListing.metadataHash)
+    createProject(metadata, finishedListing, event.block.timestamp.toI32())
+
   } else {
-    if (finishedlisting.action == 'Remove') {
+    if (finishedListing.action == 'Remove') {
       // We must remove it as a project if this ballot was for removal
       // If it was for acceptance, it never existed in the subgraph
       // so there is no need to remove anything
