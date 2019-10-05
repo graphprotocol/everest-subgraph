@@ -1,11 +1,8 @@
 /* eslint-disable prefer-const */ // to satisfy AS compiler
 
-import { BigInt, ipfs, json, Bytes, Address, store, BigDecimal } from '@graphprotocol/graph-ts'
+import { BigInt, ipfs, json, Bytes, store, BigDecimal } from '@graphprotocol/graph-ts'
 import { parseCSV } from '@graphprotocol/graph-ts/helper-functions'
 import {
-  DAppProject,
-  FinanceProject,
-  ServiceProviderProject,
   Submission,
   Listing,
   Metadata,
@@ -27,8 +24,6 @@ import {
 } from '../types/TCR/TCR'
 
 import { toDecimal, createProject } from './helpers'
-
-// TODO - the interfaces for app type
 
 // Deploy the TCR
 export function handleDeployed(event: Deployed): void {
@@ -211,18 +206,23 @@ export function handleProcessed(event: Processed): void {
   nextListing.startTime = pollData.value0
   nextListing.endTime = pollData.value1
   nextListing.revealTime = pollData.value2
-
+  
+  let metadata = Metadata.load(finishedListing.metadataHash)
   // Create project
   if (valid) {
-    let metadata = Metadata.load(finishedListing.metadataHash)
     createProject(metadata, finishedListing, event.block.timestamp.toI32())
-
   } else {
     if (finishedListing.action == 'Remove') {
       // We must remove it as a project if this ballot was for removal
       // If it was for acceptance, it never existed in the subgraph
       // so there is no need to remove anything
-      store.remove('Project', finishedListingID.toHexString())
+      if (metadata.category == 'Dapp') {
+        store.remove('DappProject', finishedListingID.toHexString())
+      } else if (metadata.category = 'Finance') {
+        store.remove('FinanceProject', finishedListingID.toHexString())
+      } else if (metadata.category = 'ServiceProvider') {
+        store.remove('ServiceProviderProject', finishedListingID.toHexString())
+      }
     }
   }
 }

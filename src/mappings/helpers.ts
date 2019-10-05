@@ -1,5 +1,5 @@
 import { Address, BigDecimal, BigInt } from '@graphprotocol/graph-ts/index'
-import { DAppProject, FinanceProject, Metadata, ServiceProviderProject } from '../types/schema'
+import { DAppProject, FinanceProject, Metadata, ServiceProviderProject, Listing } from '../types/schema'
 
 export function toDecimal(value: BigInt, decimals: u32): BigDecimal {
   let precision = BigInt.fromI32(10)
